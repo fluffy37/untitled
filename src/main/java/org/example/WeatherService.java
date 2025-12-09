@@ -23,11 +23,19 @@ public class WeatherService {
     public WeatherService() {
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
-        this.apiKey = System.getenv(API_KEY_ENV_NAME);
+
+        String rawKey = System.getenv(API_KEY_ENV_NAME);
+        if (rawKey != null) {
+            this.apiKey = rawKey.trim();
+        } else {
+            this.apiKey = null;
+        }
+
         if (this.apiKey == null || this.apiKey.isEmpty()) {
             System.err.println("Ошибка: переменная окружения " + API_KEY_ENV_NAME + " не задана!");
         }
     }
+
 
     public String getWeather(String city) {
         if (apiKey == null || apiKey.isEmpty()) {
