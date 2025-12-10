@@ -37,7 +37,7 @@ public SimpleBot(String botToken){
               answer = weatherService.getWeather(city);
            }
        } else {
-           answer = "\"Я пока понимаю только команду /weather \uD83D\uDE0A\\n\" +\n" +
+           answer = "\"Я пока понимаю только команду /weather\n" +
                    "                         \"Попробуй: /weather Москва\";";
        }
        SendMessage message = SendMessage.builder()
