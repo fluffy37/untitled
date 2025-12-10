@@ -29,8 +29,7 @@ public SimpleBot(String botToken){
                    "Напиши название города. \n" +
                    "Например: Москва";
        } else {
-           String[] parts = new String[0];
-           String city = parts[1].trim();
+           String city = text.trim();
            answer = weatherService.getWeather(city);
        }
        SendMessage message = SendMessage.builder()
