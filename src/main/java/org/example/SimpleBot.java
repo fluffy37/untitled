@@ -25,20 +25,13 @@ public SimpleBot(String botToken){
         String answer;
 
        if (text.startsWith("/start")){
-           answer = "Привет! Я бот прогноза погоды.\n" +
-           "Напиши: /weather Город\n" +
-                   "Например: /weather Москва";
-       } else  if (text.startsWith("/weather")){
-           String[] parts = text.split("\\s+", 2);
-           if (parts.length < 2){
-               answer = "Напиши так: /weather Город\nНапример: /weather Москва";
-           } else  {
-              String city = parts[1].trim();
-              answer = weatherService.getWeather(city);
-           }
+           answer = "Привет! я бот погоды.\n" +
+                   "Напиши название города. \n" +
+                   "Например: Москва";
        } else {
-           answer = "\"Я пока понимаю только команду /weather\n" +
-                   "                         \"Попробуй: /weather Москва\";";
+           String[] parts = new String[0];
+           String city = parts[1].trim();
+           answer = weatherService.getWeather(city);
        }
        SendMessage message = SendMessage.builder()
            .chatId(chatId)
