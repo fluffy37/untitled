@@ -48,6 +48,20 @@ public SimpleBot(String botToken){
                 e.printStackTrace();
             }
         }
+        String startPhotoPath = "/weather/GettyImages-1657231123-1-2.jpg";
+
+        try (InputStream is = getClass().getResourceAsStream(startPhotoPath)) {
+            if (is != null) {
+                SendPhoto photo = SendPhoto.builder()
+                        .chatId(chatId)
+                        .photo(new InputFile(is, "GettyImages-1657231123-1-2.jpg"))
+                        .build();
+                telegramClient.execute(photo);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
 
         SendMessage message = SendMessage.builder()
                 .chatId(chatId)
