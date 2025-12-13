@@ -11,6 +11,16 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 
 public class WeatherService {
+    public static class WeatherResult{
+        public final String text;
+        public final int code;
+        public final  int isDay;
+        public WeatherResult(String text, int code, int isDay) {
+            this.text = text;
+            this.code = code;
+            this.isDay = isDay;
+        }
+    }
 
     private static final String API_KEY_ENV_NAME = "WEATHER_API_KEY";
     private static final String URL_TEMPLATE =
