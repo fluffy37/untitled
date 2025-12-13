@@ -32,6 +32,11 @@ private String pikPhotoPath(int code){
     if (code == 1000){// ясно
         return "/weather/5325893484839374078_120.jpg";
 }
+    Set<Integer> snowCodes = Set.of(1210, 1213, 1216, 1219, 1222, 1225);
+    if (snowCodes.contains(code)) {
+        return "/weather/5325893484839374104_121.jpg";
+    }
+
     if (code == 1009) { // пасмурно (overcast)
         return "/weather/5325893484839374081_121.jpg";
     }
