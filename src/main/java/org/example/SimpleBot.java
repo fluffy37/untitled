@@ -36,6 +36,10 @@ private String pikPhotoPath(int code){
     if (snowCodes.contains(code)) {
         return "/weather/5325893484839374104_121.jpg";
     }
+    Set<Integer> mistFogCodes = Set.of(1030, 1135, 1147);
+    if (mistFogCodes.contains(code)) {
+        return "/weather/5325893484839374231_121.jpg";
+    }
 
     if (code == 1009) { // пасмурно (overcast)
         return "/weather/5325893484839374081_121.jpg";
