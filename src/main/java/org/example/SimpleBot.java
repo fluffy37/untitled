@@ -29,6 +29,29 @@ public SimpleBot(String botToken){
     this.telegramClient = new OkHttpTelegramClient(botToken);
     this.weatherService = new WeatherService();
 }
+    private ReplyKeyboardMarkup defaultKeyboard() {
+        KeyboardRow row1 = new KeyboardRow();
+        row1.add(new KeyboardButton("Миасс"));
+        row1.add(new KeyboardButton("Москва"));
+
+        KeyboardRow row2 = new KeyboardRow();
+        row2.add(new KeyboardButton("Париж"));
+        row2.add(new KeyboardButton("Лондон"));
+
+        KeyboardRow row3 = new KeyboardRow();
+        row3.add(new KeyboardButton("Екатеринбург"));
+        row3.add(new KeyboardButton("Лос-Анджелес"));
+
+        List<KeyboardRow> keyboard = new ArrayList<>();
+        keyboard.add(row1);
+        keyboard.add(row2);
+        keyboard.add(row3);
+
+        return ReplyKeyboardMarkup.builder()
+                .keyboard(keyboard)
+                .resizeKeyboard(true)
+                .build();
+    }
     private void sendWeather(String chatId, WeatherService.WeatherResult res) {
         String photoPath = pikPhotoPath(res.code);
 
@@ -40,7 +63,17 @@ public SimpleBot(String botToken){
                             .photo(new InputFile(is, "5325893484839374308_119.jpg"))
                             .caption(res.text)
                             .build();
+                    SendMessage back = SendMessage.builder()
+                            .chatId(chatId)
+                            .text("Можешь выбрать город из списка или написать свой 👇")
+                            .replyMarkup(defaultKeyboard())
+                            .build();
 
+                    try {
+                        telegramClient.execute(back);
+                    } catch (TelegramApiException e) {
+                        e.printStackTrace();
+                    }
                     telegramClient.execute(photo);
                     return;
                 }
@@ -92,7 +125,7 @@ private String pikPhotoPath(int code){
         return "/weather/5325893484839374087_121.jpg";
     }
 
-    return null; // если не распознали — просто текст
+    return null;
 }
     @Override
     public void consume(Update update) {
@@ -100,14 +133,14 @@ private String pikPhotoPath(int code){
             String text = update.getMessage().getText();
             String chatId = update.getMessage().getChatId().toString();
             Map<String, String> pickMAp = pendingCityPick.get(chatId);
-            if(pickMAp != null && pickMAp.containsKey(text)) {
+            if (pickMAp != null && pickMAp.containsKey(text)) {
                 String latLon = pickMAp.get(text);
                 pendingCityPick.remove(chatId);
                 WeatherService.WeatherResult res = weatherService.getWeatherCode(latLon);
                 sendWeather(chatId, res);
                 return;
-
             }
+
 
             if (text.startsWith("/start")) {
                 String answer = """
@@ -136,10 +169,7 @@ private String pikPhotoPath(int code){
                 keyboard.add(row2);
                 keyboard.add(row3);
 
-                ReplyKeyboardMarkup replyKeyboard = ReplyKeyboardMarkup.builder()
-                        .keyboard(keyboard)
-                        .resizeKeyboard(true)
-                        .build();
+                ReplyKeyboardMarkup replyKeyboard = defaultKeyboard();
                 String startPhotoPath = "/weather/GettyImages-1657231123-1-2.jpg";
 
                 System.out.println("START PHOTO URL = " + SimpleBot.class.getResource(startPhotoPath));
