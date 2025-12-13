@@ -147,6 +147,15 @@ private String pikPhotoPath(int code){
             List<WeatherService.LocationOption> opts;
             try {
                 opts = weatherService.searchLocations(query);
+                if (!query.contains(",") && query.matches(".*[А-Яа-яЁё].*")) {
+                    List<WeatherService.LocationOption> ru =
+                            opts.stream().filter(o -> "Russia".equalsIgnoreCase(o.country)).toList();
+
+                    if (!ru.isEmpty()) {
+                        opts = ru;
+                    }
+                }
+
             } catch (Exception e) {
                 e.printStackTrace();
                 return;
