@@ -9,6 +9,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class WeatherService {
     public static class WeatherResult {
@@ -97,8 +99,43 @@ public class WeatherService {
         }
     }
 
-
     public String getWeather(String city) {
         return getWeatherCode(city).text;
     }
+    public static class LocationOption{
+        public final String name, region, country;
+        public final  double lat, lon;
+        public LocationOption(String name, String region, String country, double lat, double lon) {
+            this.name = name;
+            this.region = region;
+            this.country = country;
+            this.lat = lat;
+            this.lon = lon;
+        }
+        public String latLon(){
+            return lat + "," + lon;
+        }
+    }
+    public List<LocationOption> searchLocations(String query) throws Exception {
+        String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
+        String url = String.format("https://api.weatherapi.com/v1/search.json?key=%s&q=%s", apiKey, encoded);
+
+        HttpRequest req = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+        HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+        if (resp.statusCode() != 200) return List.of();
+
+        JsonNode arr = objectMapper.readTree(resp.body()); // массив локаций
+        List<LocationOption> out = new ArrayList<>();
+        for (JsonNode loc : arr) {
+            out.add(new LocationOption(
+                    loc.path("name").asText(),
+                    loc.path("region").asText(),
+                    loc.path("country").asText(),
+                    loc.path("lat").asDouble(),
+                    loc.path("lon").asDouble()
+            ));
+        }
+        return out;
+    }
+
 }

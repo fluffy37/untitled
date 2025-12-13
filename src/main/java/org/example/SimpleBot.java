@@ -10,7 +10,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
-
+import java.util.Map;
+import java.util.HashMap;
 import java.io.InputStream;
 import java.util.Set;
 
@@ -22,11 +23,44 @@ public class SimpleBot implements LongPollingSingleThreadUpdateConsumer {
 
 private final TelegramClient telegramClient;
 private final WeatherService weatherService;
+private final Map<String, Map<String, String>> pendingCityPick = new HashMap<>();
 
 public SimpleBot(String botToken){
     this.telegramClient = new OkHttpTelegramClient(botToken);
     this.weatherService = new WeatherService();
 }
+    private void sendWeather(String chatId, WeatherService.WeatherResult res) {
+        String photoPath = pikPhotoPath(res.code);
+
+        if (photoPath != null) {
+            try (InputStream is = getClass().getResourceAsStream(photoPath)) {
+                if (is != null) {
+                    SendPhoto photo = SendPhoto.builder()
+                            .chatId(chatId)
+                            .photo(new InputFile(is, "5325893484839374308_119.jpg"))
+                            .caption(res.text)
+                            .build();
+
+                    telegramClient.execute(photo);
+                    return;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        SendMessage message = SendMessage.builder()
+                .chatId(chatId)
+                .text(res.text)
+                .build();
+
+        try {
+            telegramClient.execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 private String pikPhotoPath(int code){
     if (code == 1000){// ясно
@@ -56,6 +90,15 @@ private String pikPhotoPath(int code){
         if (update.hasMessage() && update.getMessage().hasText()) {
             String text = update.getMessage().getText();
             String chatId = update.getMessage().getChatId().toString();
+            Map<String, String> pickMAp = pendingCityPick.get(chatId);
+            if(pickMAp != null && pickMAp.containsKey(text)) {
+                String latLon = pickMAp.get(text);
+                pendingCityPick.remove(chatId);
+                WeatherService.WeatherResult res = weatherService.getWeatherCode(latLon);
+                sendWeather(chatId, res);
+                return;
+
+            }
 
             if (text.startsWith("/start")) {
                 String answer = "Привет! я бот погоды.\n" +
@@ -99,34 +142,70 @@ private String pikPhotoPath(int code){
                 return;
             }
 
-            String city = text.trim();
-            WeatherService.WeatherResult res = weatherService.getWeatherCode(city);
+            String query = text.trim();
 
-            String photoPath = pikPhotoPath(res.code);
-            if (photoPath != null) {
-                try (InputStream is = getClass().getResourceAsStream(photoPath)) {
-                    if (is != null) {
-                        SendPhoto photo = SendPhoto.builder()
-                                .chatId(chatId)
-                                .photo(new InputFile(is, "weather.jpg"))
-                                .caption(res.text)
-                                .build();
+            List<WeatherService.LocationOption> opts;
+            try {
+                opts = weatherService.searchLocations(query);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return;
+            }
 
-                        telegramClient.execute(photo);
-
-                        return;
-                    }
-                } catch (Exception e) {
+            if (opts.isEmpty()) {
+                SendMessage msg = SendMessage.builder()
+                        .chatId(chatId)
+                        .text("Не нашёл город 😔 Попробуй уточнить (например: Москва, RU).")
+                        .build();
+                try {
+                    telegramClient.execute(msg);
+                } catch (TelegramApiException e) {
                     e.printStackTrace();
                 }
+                return;
             }
-            SendMessage message = SendMessage.builder()
+
+// 1 вариант — сразу погода
+            if (opts.size() == 1) {
+                String latLon = opts.get(0).latLon(); // ВАЖНО: метод должен называться latLon()
+                WeatherService.WeatherResult res = weatherService.getWeatherCode(latLon);
+                sendWeather(chatId, res);
+                return;
+            }
+
+// Несколько вариантов — показываем кнопки (макс 5)
+            int limit = Math.min(5, opts.size());
+            Map<String, String> map = new HashMap<>();
+            List<KeyboardRow> keyboard = new ArrayList<>();
+
+            for (int i = 0; i < limit; i++) {
+                WeatherService.LocationOption o = opts.get(i);
+
+                String regionPart = (o.region == null || o.region.isBlank()) ? "" : (", " + o.region);
+                String buttonText = (i + 1) + ") " + o.name + regionPart + ", " + o.country;
+
+                map.put(buttonText, o.latLon()); // ВАЖНО: latLon()
+
+                KeyboardRow row = new KeyboardRow();
+                row.add(new KeyboardButton(buttonText));
+                keyboard.add(row);
+            }
+
+            pendingCityPick.put(chatId, map);
+
+            ReplyKeyboardMarkup replyKeyboard = ReplyKeyboardMarkup.builder()
+                    .keyboard(keyboard)
+                    .resizeKeyboard(true)
+                    .build();
+
+            SendMessage msg = SendMessage.builder()
                     .chatId(chatId)
-                    .text(res.text)
+                    .text("Нашёл несколько городов с таким названием. Выбери нужный:")
+                    .replyMarkup(replyKeyboard)
                     .build();
 
             try {
-                telegramClient.execute(message);
+                telegramClient.execute(msg);
             } catch (TelegramApiException e) {
                 e.printStackTrace();
             }
