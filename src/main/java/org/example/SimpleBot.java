@@ -8,6 +8,12 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
+
+import java.io.InputStream;
+import java.util.Set;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +28,20 @@ public SimpleBot(String botToken){
     this.weatherService = new WeatherService();
 }
 
+private String pikPhotoPath(int code){
+    if (code == 1000){// ясно
+        return "/weather/5325893484839374078_120.jpg";
+}
+    if (code == 1009) { // пасмурно (overcast)
+        return "/weather/5325893484839374081_121.jpg";
+    }
+    Set<Integer> rainCodes = Set.of(1180, 1183, 1186, 1189, 1192, 1195);
+    if (rainCodes.contains(code)) {
+        return "/weather/5325893484839374087_121.jpg";
+    }
+
+    return null; // если не распознали — просто текст
+}
     @Override
     public void consume(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
@@ -71,11 +91,29 @@ public SimpleBot(String botToken){
             }
 
             String city = text.trim();
-            String answer = weatherService.getWeather(city);
+            WeatherService.WeatherResult res = weatherService.getWeatherCode(city);
 
+            String photoPath = pikPhotoPath(res.code);
+            if (photoPath != null) {
+                try (InputStream is = getClass().getResourceAsStream(photoPath)) {
+                    if (is != null) {
+                        SendPhoto photo = SendPhoto.builder()
+                                .chatId(chatId)
+                                .photo(new InputFile(is, "weather.jpg"))
+                                .caption(res.text)
+                                .build();
+
+                        telegramClient.execute(photo);
+
+                        return;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
             SendMessage message = SendMessage.builder()
                     .chatId(chatId)
-                    .text(answer)
+                    .text(res.text)
                     .build();
 
             try {
@@ -84,5 +122,4 @@ public SimpleBot(String botToken){
                 e.printStackTrace();
             }
         }
-    }
-}
+    }}

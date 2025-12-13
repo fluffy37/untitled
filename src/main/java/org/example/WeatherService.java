@@ -11,10 +11,11 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 
 public class WeatherService {
-    public static class WeatherResult{
+    public static class WeatherResult {
         public final String text;
         public final int code;
-        public final  int isDay;
+        public final int isDay;
+
         public WeatherResult(String text, int code, int isDay) {
             this.text = text;
             this.code = code;
@@ -46,10 +47,9 @@ public class WeatherService {
         }
     }
 
-
-    public String getWeather(String city) {
+    public WeatherResult getWeatherCode(String city) {
         if (apiKey == null || apiKey.isEmpty()) {
-            return "Сервер не настроен: нет ключа погодного API 😢";
+            return new WeatherResult("Сервер не настроен: нет ключа погодного API 😢", -1, -1);
         }
 
         try {
@@ -65,7 +65,7 @@ public class WeatherService {
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
-                return "Не удалось получить погоду для \"" + city + "\" 😔";
+                return new WeatherResult("Не удалось получить погоду для \"" + city + "\" 😔", -1, -1);
             }
 
             String body = response.body();
@@ -81,13 +81,24 @@ public class WeatherService {
             double feelsLike = current.path("feelslike_c").asDouble();
             String condition = current.path("condition").path("text").asText();
 
-            return String.format(
+            int code = current.path("condition").path("code").asInt();
+            int isDay = current.path("is_day").asInt();
+
+            String text = String.format(
                     "Погода в %s (%s):\n%.1f°C (ощущается как %.1f°C), %s",
                     name, country, temp, feelsLike, condition
             );
+
+            return new WeatherResult(text, code, isDay);
+
         } catch (Exception e) {
             e.printStackTrace();
-            return "Произошла ошибка при запросе погоды 😢";
+            return new WeatherResult("Произошла ошибка при запросе погоды 😢", -1, -1);
         }
+    }
+
+
+    public String getWeather(String city) {
+        return getWeatherCode(city).text;
     }
 }
