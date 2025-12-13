@@ -156,6 +156,7 @@ private String pikPhotoPath(int code){
                     }
                 }
 
+
             } catch (Exception e) {
                 e.printStackTrace();
                 return;
