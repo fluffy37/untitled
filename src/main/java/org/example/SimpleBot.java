@@ -52,11 +52,6 @@ public SimpleBot(String botToken){
 
         try (InputStream is = getClass().getResourceAsStream(startPhotoPath)) {
             if (is != null) {
-                SendPhoto photo = SendPhoto.builder()
-                        .chatId(chatId)
-                        .photo(new InputFile(is, "GettyImages-1657231123-1-2.jpg"))
-                        .build();
-                telegramClient.execute(photo);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -145,6 +140,24 @@ private String pikPhotoPath(int code){
                         .keyboard(keyboard)
                         .resizeKeyboard(true)
                         .build();
+                String startPhotoPath = "/weather/GettyImages-1657231123-1-2.jpg";
+
+                System.out.println("START PHOTO URL = " + SimpleBot.class.getResource(startPhotoPath));
+
+                try (InputStream is = SimpleBot.class.getResourceAsStream(startPhotoPath)) {
+                    if (is != null) {
+                        SendPhoto photo = SendPhoto.builder()
+                                .chatId(chatId)
+                                .photo(new InputFile(is, "GettyImages-1657231123-1-2.jpg"))
+                                .build();
+                        telegramClient.execute(photo);
+                    } else {
+                        System.out.println("START PHOTO STREAM = null (не нашёл файл в resources)");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
 
                 SendMessage message = SendMessage.builder()
                         .chatId(chatId)
